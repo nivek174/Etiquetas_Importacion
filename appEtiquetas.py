@@ -111,20 +111,39 @@ def generar_pdf_etiquetas(datos):
         # Posiciones para cada línea
         y_positions = [21*mm, 18*mm, 15*mm, 12*mm, 9*mm, 6*mm]
         
-        # Textos y valores
-        textos = [
-            "IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV",
-            "MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,",
-            "TIJUANA, B.C. 22114 RFC: MBC210723RP9",
-            f"DESCRIPCION: {descripcion}",
-            f"CONTENIDO: {contenido}",
-            f"HECHO EN: {hecho_en}"
-        ]
+        # Primera línea: IMPORTADOR en negrita, resto normal
+        c.setFont("Helvetica-Bold", font_size)
+        c.drawString(5*mm, y_positions[0], "IMPORTADOR: ")
+        # Calcular ancho de "IMPORTADOR: " para posicionar el resto
+        ancho_importador = c.stringWidth("IMPORTADOR: ", "Helvetica-Bold", font_size)
+        c.setFont("Helvetica", font_size)
+        c.drawString(5*mm + ancho_importador, y_positions[0], "MOTORMAN DE BAJA CALIFORNIA SA DE CV")
         
-        # Dibujar cada línea
-        for texto, y_pos in zip(textos, y_positions):
-            c.setFont("Helvetica", font_size)
-            c.drawString(5*mm, y_pos, texto)
+        # Segunda y tercera línea (normal)
+        c.setFont("Helvetica", font_size)
+        c.drawString(5*mm, y_positions[1], "MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,")
+        c.drawString(5*mm, y_positions[2], "TIJUANA, B.C. 22114 RFC: MBC210723RP9")
+        
+        # Cuarta línea: DESCRIPCION en negrita
+        c.setFont("Helvetica-Bold", font_size)
+        c.drawString(5*mm, y_positions[3], "DESCRIPCION: ")
+        ancho_descripcion = c.stringWidth("DESCRIPCION: ", "Helvetica-Bold", font_size)
+        c.setFont("Helvetica", font_size)
+        c.drawString(5*mm + ancho_descripcion, y_positions[3], descripcion)
+        
+        # Quinta línea: CONTENIDO en negrita
+        c.setFont("Helvetica-Bold", font_size)
+        c.drawString(5*mm, y_positions[4], "CONTENIDO: ")
+        ancho_contenido = c.stringWidth("CONTENIDO: ", "Helvetica-Bold", font_size)
+        c.setFont("Helvetica", font_size)
+        c.drawString(5*mm + ancho_contenido, y_positions[4], contenido)
+        
+        # Sexta línea: HECHO EN en negrita
+        c.setFont("Helvetica-Bold", font_size)
+        c.drawString(5*mm, y_positions[5], "HECHO EN: ")
+        ancho_hecho = c.stringWidth("HECHO EN: ", "Helvetica-Bold", font_size)
+        c.setFont("Helvetica", font_size)
+        c.drawString(5*mm + ancho_hecho, y_positions[5], hecho_en)
         
         c.showPage()
     
