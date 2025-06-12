@@ -20,7 +20,7 @@ class GeneradorEtiquetasApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Generador de Etiquetas de Importación 76x25mm")
-        self.root.geometry("700x600")
+        self.root.geometry("700x650")
         self.root.resizable(True, True)
         
         # Información fija del importador (formato exacto como fue especificado, pero en mayúsculas)
@@ -30,7 +30,8 @@ class GeneradorEtiquetasApp:
             "TIJUANA, B.C. 22114 RFC: MBC210723RP9",
             "**DESCRIPCION:**",
             "**CONTENIDO:**",
-            "**HECHO EN:**"
+            "**HECHO EN:**",
+            "**No. PARTE:**"  # Nueva línea agregada
         ]
         
         # Crear el estilo para los widgets
@@ -93,16 +94,21 @@ class GeneradorEtiquetasApp:
         self.hecho_en_var = tk.StringVar(value="CHINA")
         ttk.Entry(datos_frame, textvariable=self.hecho_en_var, width=40).grid(row=2, column=1, sticky="we", pady=5, padx=5)
         
-        ttk.Label(datos_frame, text="CANTIDAD ETIQUETAS:").grid(row=3, column=0, sticky="w", pady=5)
+        # NUEVO CAMPO: Número de Parte
+        ttk.Label(datos_frame, text="No. PARTE:").grid(row=3, column=0, sticky="w", pady=5)
+        self.numero_parte_var = tk.StringVar(value="12345-ABC")
+        ttk.Entry(datos_frame, textvariable=self.numero_parte_var, width=40).grid(row=3, column=1, sticky="we", pady=5, padx=5)
+        
+        ttk.Label(datos_frame, text="CANTIDAD ETIQUETAS:").grid(row=4, column=0, sticky="w", pady=5)
         self.cantidad_var = tk.IntVar(value=10)
-        ttk.Spinbox(datos_frame, from_=1, to=100, textvariable=self.cantidad_var, width=10).grid(row=3, column=1, sticky="w", pady=5, padx=5)
+        ttk.Spinbox(datos_frame, from_=1, to=100, textvariable=self.cantidad_var, width=10).grid(row=4, column=1, sticky="w", pady=5, padx=5)
         
         # Frame para vista previa
         preview_frame = ttk.LabelFrame(main_frame, text="Vista Previa", padding="10")
         preview_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
         
-        # Canvas para vista previa
-        self.preview_canvas = tk.Canvas(preview_frame, bg="white", width=228, height=75)  # 3x escala
+        # Canvas para vista previa (ajustado ligeramente más alto para acomodar la nueva línea)
+        self.preview_canvas = tk.Canvas(preview_frame, bg="white", width=228, height=85)  # 3x escala
         self.preview_canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Botón para actualizar vista previa
@@ -133,7 +139,7 @@ class GeneradorEtiquetasApp:
         self.preview_canvas.delete("all")
         
         # Dibujar borde de la etiqueta
-        self.preview_canvas.create_rectangle(2, 2, 226, 73, outline="black")
+        self.preview_canvas.create_rectangle(2, 2, 226, 83, outline="black")
         
         # Obtener datos actuales
         descripcion = self.descripcion_var.get().upper()  # Convertir a mayúsculas
@@ -145,12 +151,14 @@ class GeneradorEtiquetasApp:
             contenido = f"{cantidad_contenido} PIEZAS"
             
         hecho_en = self.hecho_en_var.get().upper()  # Convertir a mayúsculas
+        numero_parte = self.numero_parte_var.get().upper()  # Convertir a mayúsculas
         
-        # Posiciones para las líneas en la vista previa
-        y_positions = [10, 20, 30, 40, 50, 60]
+        # Posiciones para las líneas en la vista previa (ajustadas para incluir nueva línea)
+        y_positions = [10, 20, 30, 40, 50, 60, 70]
         
         # Tamaño de fuente para la vista previa
         font_size = 7
+        font_size_parte = 5  # 30% más pequeño para el número de parte
         
         # Dibujar cada línea
         for i, y_pos in enumerate(y_positions):
@@ -204,18 +212,27 @@ class GeneradorEtiquetasApp:
                                              text=hecho_en, 
                                              font=("Arial", font_size), 
                                              anchor="w")
+            elif i == 6:  # Séptima línea: **No. PARTE:** + valor (más pequeño)
+                self.preview_canvas.create_text(10, y_pos, 
+                                             text="No. PARTE:", 
+                                             font=("Arial", font_size_parte, "bold"), 
+                                             anchor="w")
+                self.preview_canvas.create_text(90, y_pos, 
+                                             text=numero_parte, 
+                                             font=("Arial", font_size_parte), 
+                                             anchor="w")
     
     def crear_excel_ejemplo(self):
         """Crea un archivo Excel de ejemplo con datos de muestra"""
         try:
-            # Crear datos de ejemplo
+            # Crear datos de ejemplo (ahora con campo numero_parte)
             datos = [
-                {"descripcion": "ABANICO PARA RADIADOR CON MOTOR", "cantidad_contenido": 1, "hecho_en": "CHINA", "cantidad_etiquetas": 10},
-                {"descripcion": "BOMBA DE AGUA", "cantidad_contenido": 2, "hecho_en": "JAPÓN", "cantidad_etiquetas": 5},
-                {"descripcion": "FILTRO DE ACEITE", "cantidad_contenido": 5, "hecho_en": "MÉXICO", "cantidad_etiquetas": 20},
-                {"descripcion": "SENSOR DE OXÍGENO", "cantidad_contenido": 1, "hecho_en": "CHINA", "cantidad_etiquetas": 15},
-                {"descripcion": "PASTILLAS DE FRENO", "cantidad_contenido": 4, "hecho_en": "ESTADOS UNIDOS", "cantidad_etiquetas": 8},
-                {"descripcion": "AMORTIGUADOR TRASERO", "cantidad_contenido": 2, "hecho_en": "TAIWÁN", "cantidad_etiquetas": 12},
+                {"descripcion": "ABANICO PARA RADIADOR CON MOTOR", "cantidad_contenido": 1, "hecho_en": "CHINA", "numero_parte": "FAN-12345", "cantidad_etiquetas": 10},
+                {"descripcion": "BOMBA DE AGUA", "cantidad_contenido": 2, "hecho_en": "JAPÓN", "numero_parte": "WP-67890", "cantidad_etiquetas": 5},
+                {"descripcion": "FILTRO DE ACEITE", "cantidad_contenido": 5, "hecho_en": "MÉXICO", "numero_parte": "OF-11223", "cantidad_etiquetas": 20},
+                {"descripcion": "SENSOR DE OXÍGENO", "cantidad_contenido": 1, "hecho_en": "CHINA", "numero_parte": "OS-44556", "cantidad_etiquetas": 15},
+                {"descripcion": "PASTILLAS DE FRENO", "cantidad_contenido": 4, "hecho_en": "ESTADOS UNIDOS", "numero_parte": "BP-77889", "cantidad_etiquetas": 8},
+                {"descripcion": "AMORTIGUADOR TRASERO", "cantidad_contenido": 2, "hecho_en": "TAIWÁN", "numero_parte": "SA-99012", "cantidad_etiquetas": 12},
             ]
             
             # Crear DataFrame y guardar como Excel
@@ -235,6 +252,7 @@ class GeneradorEtiquetasApp:
                                    "- descripcion: Descripción del producto\n"
                                    "- cantidad_contenido: Número de piezas en el paquete\n"
                                    "- hecho_en: País de fabricación\n"
+                                   "- numero_parte: Número de parte o SKU\n"
                                    "- cantidad_etiquetas: Cantidad de etiquetas a generar para cada producto")
         
         except Exception as e:
@@ -353,12 +371,22 @@ class GeneradorEtiquetasApp:
                     except:
                         cantidad_contenido = 1
                 
+                # Obtener número de parte
+                numero_parte = ""
+                if "numero_parte" in row:
+                    numero_parte = str(row["numero_parte"])
+                elif "sku" in row:
+                    numero_parte = str(row["sku"])
+                elif "part_number" in row:
+                    numero_parte = str(row["part_number"])
+                
                 # Agregar tantas etiquetas como se necesiten para este producto
                 for _ in range(cantidad_etiquetas):
                     etiquetas_datos.append({
                         'descripcion': row["descripcion"] if "descripcion" in row else "",
                         'cantidad_contenido': cantidad_contenido,
-                        'hecho_en': row["hecho_en"] if "hecho_en" in row else ""
+                        'hecho_en': row["hecho_en"] if "hecho_en" in row else "",
+                        'numero_parte': numero_parte
                     })
             
             # Guardar archivo según formato seleccionado
@@ -420,6 +448,7 @@ class GeneradorEtiquetasApp:
             descripcion = self.descripcion_var.get()
             cantidad_contenido = self.cantidad_contenido_var.get()
             hecho_en = self.hecho_en_var.get()
+            numero_parte = self.numero_parte_var.get()
             cantidad_etiquetas = self.cantidad_var.get()
             
             # Crear datos
@@ -428,7 +457,8 @@ class GeneradorEtiquetasApp:
                 datos.append({
                     'descripcion': descripcion,
                     'cantidad_contenido': cantidad_contenido,
-                    'hecho_en': hecho_en
+                    'hecho_en': hecho_en,
+                    'numero_parte': numero_parte
                 })
             
             # Preguntar el formato de salida
@@ -485,6 +515,7 @@ class GeneradorEtiquetasApp:
             descripcion = self.descripcion_var.get()
             cantidad_contenido = self.cantidad_contenido_var.get()
             hecho_en = self.hecho_en_var.get()
+            numero_parte = self.numero_parte_var.get()
             cantidad_etiquetas = self.cantidad_var.get()
             
             # Crear datos
@@ -493,7 +524,8 @@ class GeneradorEtiquetasApp:
                 datos.append({
                     'descripcion': descripcion,
                     'cantidad_contenido': cantidad_contenido,
-                    'hecho_en': hecho_en
+                    'hecho_en': hecho_en,
+                    'numero_parte': numero_parte
                 })
             
             # Mostrar mensaje antes de generar PDF
@@ -559,12 +591,14 @@ class GeneradorEtiquetasApp:
                 # Convertir valores a mayúsculas
                 descripcion = etiqueta['descripcion'].upper()
                 hecho_en = etiqueta['hecho_en'].upper()
+                numero_parte = etiqueta.get('numero_parte', '').upper()
                 
                 # Ajuste de tamaño de fuente base
                 font_size = 6
+                font_size_parte = 4.2  # 30% más pequeño para el número de parte
                 
-                # Posiciones para cada línea
-                y_positions = [21*mm, 18*mm, 15*mm, 12*mm, 9*mm, 6*mm]
+                # Posiciones para cada línea (ajustadas para incluir la nueva línea)
+                y_positions = [22*mm, 19.5*mm, 17*mm, 14*mm, 11*mm, 8*mm, 5*mm]
                 
                 # Lista de textos para cada línea
                 textos = [
@@ -573,14 +607,21 @@ class GeneradorEtiquetasApp:
                     self.info_importador[2],                # TIJUANA, B.C. ...
                     self.info_importador[3],                # **DESCRIPCION:**
                     self.info_importador[4],                # **CONTENIDO:**
-                    self.info_importador[5]                 # **HECHO EN:**
+                    self.info_importador[5],                # **HECHO EN:**
+                    self.info_importador[6]                 # **No. PARTE:**
                 ]
                 
                 # Valores para agregar después de los encabezados
-                valores = ["", "", "", descripcion, contenido, hecho_en]
+                valores = ["", "", "", descripcion, contenido, hecho_en, numero_parte]
                 
                 # Dibujar cada línea
                 for i, (texto, y_pos) in enumerate(zip(textos, y_positions)):
+                    # Determinar el tamaño de fuente para esta línea
+                    if i == 6:  # Línea del número de parte
+                        current_font_size = font_size_parte
+                    else:
+                        current_font_size = font_size
+                    
                     # Aplicar negrita solo si el texto lo necesita
                     if "**" in texto:
                         # Descomponer el texto cuando tiene partes en negrita
@@ -592,24 +633,24 @@ class GeneradorEtiquetasApp:
                         for j, parte in enumerate(partes):
                             if parte:  # Si la parte no está vacía
                                 if j % 2 == 1:  # Partes impares están entre ** (en negrita)
-                                    c.setFont(font_name_bold, font_size)
+                                    c.setFont(font_name_bold, current_font_size)
                                 else:  # Partes pares están fuera de ** (normal)
-                                    c.setFont(font_name, font_size)
+                                    c.setFont(font_name, current_font_size)
                                 
                                 # Dibujar esta parte del texto
                                 c.drawString(x_pos, y_pos, parte)
                                 
                                 # Avanzar la posición X para la siguiente parte
-                                x_pos += c.stringWidth(parte, c._fontname, font_size)
+                                x_pos += c.stringWidth(parte, c._fontname, current_font_size)
                         
                         # Si esta línea tiene un valor adicional
                         if i >= 3 and valores[i]:  # A partir de DESCRIPCION
-                            c.setFont(font_name, font_size)
+                            c.setFont(font_name, current_font_size)
                             # Dibujar el valor después del encabezado
                             c.drawString(x_pos + 2*mm, y_pos, valores[i])
                     else:
                         # Texto sin formato especial - todo normal
-                        c.setFont(font_name, font_size)
+                        c.setFont(font_name, current_font_size)
                         c.drawString(5*mm, y_pos, texto)
                 
                 # Pasar a la siguiente página
@@ -651,6 +692,7 @@ class GeneradorEtiquetasApp:
         alineacion_izquierda = Alignment(wrap_text=True, vertical='center', horizontal='left')
         negrita = Font(bold=True, size=7)  # Tamaño de fuente para las partes en negrita
         normal = Font(bold=False, size=7)  # Tamaño de fuente para texto normal
+        normal_pequeno = Font(bold=False, size=5)  # Tamaño más pequeño para número de parte
         
         # Configurar el ancho de columnas para etiquetas de 76mm (aproximadamente 25 unidades Excel)
         for col in range(1, 4):
@@ -679,6 +721,7 @@ class GeneradorEtiquetasApp:
             
             descripcion = etiqueta['descripcion'].upper()
             hecho_en = etiqueta['hecho_en'].upper()
+            numero_parte = etiqueta.get('numero_parte', '').upper()
             
             # En Excel no podemos aplicar negrita a partes del texto en una celda,
             # por lo que recreamos el formato visual lo mejor posible
@@ -688,17 +731,18 @@ class GeneradorEtiquetasApp:
             linea4 = "DESCRIPCION: " + descripcion
             linea5 = "CONTENIDO: " + contenido
             linea6 = "HECHO EN: " + hecho_en
+            linea7 = "No. PARTE: " + numero_parte  # Nueva línea
             
             # Contenido completo de la etiqueta
-            contenido_etiqueta = f"{linea1}\n{linea2}\n{linea3}\n{linea4}\n{linea5}\n{linea6}"
+            contenido_etiqueta = f"{linea1}\n{linea2}\n{linea3}\n{linea4}\n{linea5}\n{linea6}\n{linea7}"
             
             celda.value = contenido_etiqueta
             celda.font = normal  # Usar fuente normal por defecto
             celda.alignment = alineacion_izquierda  # Alineación a la izquierda
             celda.border = borde
             
-            # Ajustar la altura de la fila
-            ws.row_dimensions[fila_actual].height = 19
+            # Ajustar la altura de la fila (ligeramente más alta para acomodar la línea extra)
+            ws.row_dimensions[fila_actual].height = 21
             
             # Avanzar a la siguiente posición
             col_actual += 1
