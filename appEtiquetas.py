@@ -80,7 +80,7 @@ with col2:
         <div><strong>DESCRIPCION:</strong> {descripcion.upper()}</div>
         <div><strong>CONTENIDO:</strong> {contenido_text}</div>
         <div><strong>HECHO EN:</strong> {hecho_en.upper()}</div>
-        <div style="font-size: 5px;"><strong>No. PARTE:</strong> {numero_parte.upper()}</div>
+        <div><strong>No. PARTE:</strong> {numero_parte.upper()}</div>
     </div>
     """
     st.markdown(preview_html, unsafe_allow_html=True)

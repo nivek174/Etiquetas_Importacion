@@ -158,7 +158,7 @@ class GeneradorEtiquetasApp:
         
         # Tamaño de fuente para la vista previa
         font_size = 7
-        font_size_parte = 5  # 30% más pequeño para el número de parte
+        font_size_parte = 7  # 30% más pequeño para el número de parte
         
         # Dibujar cada línea
         for i, y_pos in enumerate(y_positions):
@@ -595,7 +595,7 @@ class GeneradorEtiquetasApp:
                 
                 # Ajuste de tamaño de fuente base
                 font_size = 6
-                font_size_parte = 4.2  # 30% más pequeño para el número de parte
+                font_size_parte = 6  # 30% más pequeño para el número de parte
                 
                 # Posiciones para cada línea (ajustadas para incluir la nueva línea)
                 y_positions = [22*mm, 19.5*mm, 17*mm, 14*mm, 11*mm, 8*mm, 5*mm]
