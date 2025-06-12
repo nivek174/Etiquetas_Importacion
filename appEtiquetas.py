@@ -38,7 +38,8 @@ info_importador = [
     "TIJUANA, B.C. 22114 RFC: MBC210723RP9",
     "**DESCRIPCION:**",
     "**CONTENIDO:**",
-    "**HECHO EN:**"
+    "**HECHO EN:**",
+    "**No. PARTE:**"
 ]
 
 # Crear columnas para el layout
@@ -59,6 +60,7 @@ with col1:
         st.text("PIEZA(S)")
     
     hecho_en = st.text_input("HECHO EN:", value="CHINA")
+    numero_parte = st.text_input("No. PARTE:", value="12345-ABC")  # NUEVO CAMPO
     cantidad_etiquetas = st.number_input("CANTIDAD DE ETIQUETAS:", min_value=1, max_value=100, value=10, step=1)
 
 with col2:
@@ -71,13 +73,14 @@ with col2:
         contenido_text = f"{cantidad_contenido} PIEZAS"
     
     preview_html = f"""
-    <div style="border: 2px solid black; padding: 10px; width: 228px; height: 75px; background-color: white; font-family: Arial; font-size: 7px; line-height: 1.2;">
+    <div style="border: 2px solid black; padding: 10px; width: 228px; height: 85px; background-color: white; font-family: Arial; font-size: 7px; line-height: 1.2;">
         <div><strong>IMPORTADOR:</strong> MOTORMAN DE BAJA CALIFORNIA SA DE CV</div>
         <div>MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,</div>
         <div>TIJUANA, B.C. 22114 RFC: MBC210723RP9</div>
         <div><strong>DESCRIPCION:</strong> {descripcion.upper()}</div>
         <div><strong>CONTENIDO:</strong> {contenido_text}</div>
         <div><strong>HECHO EN:</strong> {hecho_en.upper()}</div>
+        <div style="font-size: 5px;"><strong>No. PARTE:</strong> {numero_parte.upper()}</div>
     </div>
     """
     st.markdown(preview_html, unsafe_allow_html=True)
@@ -104,12 +107,14 @@ def generar_pdf_etiquetas(datos):
         # Convertir valores a mayúsculas
         descripcion = etiqueta['descripcion'].upper()
         hecho_en = etiqueta['hecho_en'].upper()
+        numero_parte = etiqueta.get('numero_parte', '').upper()
         
         # Configurar fuente
-        font_size = 6  # Aumentado 1 punto
+        font_size = 6
+        font_size_parte = 4.2  # 30% más pequeño para el número de parte
         
-        # Posiciones para cada línea
-        y_positions = [21*mm, 18*mm, 15*mm, 12*mm, 9*mm, 6*mm]
+        # Posiciones para cada línea (ajustadas para incluir la nueva línea)
+        y_positions = [22*mm, 19.5*mm, 17*mm, 14*mm, 11*mm, 8*mm, 5*mm]
         
         # Primera línea: IMPORTADOR en negrita, resto normal
         c.setFont("Helvetica-Bold", font_size)
@@ -144,6 +149,13 @@ def generar_pdf_etiquetas(datos):
         ancho_hecho = c.stringWidth("HECHO EN: ", "Helvetica-Bold", font_size)
         c.setFont("Helvetica", font_size)
         c.drawString(5*mm + ancho_hecho, y_positions[5], hecho_en)
+        
+        # Séptima línea: No. PARTE en negrita (más pequeño)
+        c.setFont("Helvetica-Bold", font_size_parte)
+        c.drawString(5*mm, y_positions[6], "No. PARTE: ")
+        ancho_parte = c.stringWidth("No. PARTE: ", "Helvetica-Bold", font_size_parte)
+        c.setFont("Helvetica", font_size_parte)
+        c.drawString(5*mm + ancho_parte, y_positions[6], numero_parte)
         
         c.showPage()
     
@@ -188,6 +200,7 @@ def generar_excel_etiquetas(datos):
         
         descripcion = etiqueta['descripcion'].upper()
         hecho_en = etiqueta['hecho_en'].upper()
+        numero_parte = etiqueta.get('numero_parte', '').upper()
         
         # Contenido de la etiqueta
         contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
@@ -195,14 +208,15 @@ MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,
 TIJUANA, B.C. 22114 RFC: MBC210723RP9
 DESCRIPCION: {descripcion}
 CONTENIDO: {contenido}
-HECHO EN: {hecho_en}"""
+HECHO EN: {hecho_en}
+No. PARTE: {numero_parte}"""
         
         celda.value = contenido_etiqueta
         celda.font = normal
         celda.alignment = alineacion
         celda.border = borde
         
-        ws.row_dimensions[fila_actual].height = 19
+        ws.row_dimensions[fila_actual].height = 21
         
         # Avanzar posición
         col_actual += 1
@@ -229,7 +243,8 @@ with col_btn1:
             datos.append({
                 'descripcion': descripcion,
                 'cantidad_contenido': cantidad_contenido,
-                'hecho_en': hecho_en
+                'hecho_en': hecho_en,
+                'numero_parte': numero_parte
             })
         
         # Generar PDF
@@ -251,7 +266,8 @@ with col_btn2:
             datos.append({
                 'descripcion': descripcion,
                 'cantidad_contenido': cantidad_contenido,
-                'hecho_en': hecho_en
+                'hecho_en': hecho_en,
+                'numero_parte': numero_parte
             })
         
         # Generar Excel
@@ -268,11 +284,11 @@ with col_btn2:
 with col_btn3:
     # Plantilla de ejemplo
     if st.button("📋 Descargar Plantilla"):
-        # Crear datos de ejemplo
+        # Crear datos de ejemplo (ACTUALIZADO con numero_parte)
         datos_ejemplo = pd.DataFrame([
-            {"descripcion": "ABANICO PARA RADIADOR CON MOTOR", "cantidad_contenido": 1, "hecho_en": "CHINA", "cantidad_etiquetas": 10},
-            {"descripcion": "BOMBA DE AGUA", "cantidad_contenido": 2, "hecho_en": "JAPÓN", "cantidad_etiquetas": 5},
-            {"descripcion": "FILTRO DE ACEITE", "cantidad_contenido": 5, "hecho_en": "MÉXICO", "cantidad_etiquetas": 20},
+            {"descripcion": "ABANICO PARA RADIADOR CON MOTOR", "cantidad_contenido": 1, "hecho_en": "CHINA", "numero_parte": "FAN-12345", "cantidad_etiquetas": 10},
+            {"descripcion": "BOMBA DE AGUA", "cantidad_contenido": 2, "hecho_en": "JAPÓN", "numero_parte": "WP-67890", "cantidad_etiquetas": 5},
+            {"descripcion": "FILTRO DE ACEITE", "cantidad_contenido": 5, "hecho_en": "MÉXICO", "numero_parte": "OF-11223", "cantidad_etiquetas": 20},
         ])
         
         # Convertir a Excel
@@ -322,11 +338,21 @@ if uploaded_file is not None:
                         cantidad_etiquetas = int(row.get('cantidad_etiquetas', 1))
                         cantidad_contenido = int(row.get('cantidad_contenido', 1))
                         
+                        # Obtener número de parte
+                        numero_parte = ""
+                        if "numero_parte" in row:
+                            numero_parte = str(row["numero_parte"])
+                        elif "sku" in row:
+                            numero_parte = str(row["sku"])
+                        elif "part_number" in row:
+                            numero_parte = str(row["part_number"])
+                        
                         for _ in range(cantidad_etiquetas):
                             etiquetas_datos.append({
                                 'descripcion': row['descripcion'],
                                 'cantidad_contenido': cantidad_contenido,
-                                'hecho_en': row['hecho_en']
+                                'hecho_en': row['hecho_en'],
+                                'numero_parte': numero_parte
                             })
                     
                     # Generar PDF
@@ -348,11 +374,21 @@ if uploaded_file is not None:
                         cantidad_etiquetas = int(row.get('cantidad_etiquetas', 1))
                         cantidad_contenido = int(row.get('cantidad_contenido', 1))
                         
+                        # Obtener número de parte
+                        numero_parte = ""
+                        if "numero_parte" in row:
+                            numero_parte = str(row["numero_parte"])
+                        elif "sku" in row:
+                            numero_parte = str(row["sku"])
+                        elif "part_number" in row:
+                            numero_parte = str(row["part_number"])
+                        
                         for _ in range(cantidad_etiquetas):
                             etiquetas_datos.append({
                                 'descripcion': row['descripcion'],
                                 'cantidad_contenido': cantidad_contenido,
-                                'hecho_en': row['hecho_en']
+                                'hecho_en': row['hecho_en'],
+                                'numero_parte': numero_parte
                             })
                     
                     # Generar Excel
