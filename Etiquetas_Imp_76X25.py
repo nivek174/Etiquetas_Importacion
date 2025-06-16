@@ -15,6 +15,11 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
 import sys
+# Librerías para código de barras
+from barcode import Code128
+from barcode.writer import ImageWriter
+import io
+from PIL import Image
 
 class GeneradorEtiquetasApp:
     def __init__(self, root):
@@ -23,15 +28,14 @@ class GeneradorEtiquetasApp:
         self.root.geometry("700x650")
         self.root.resizable(True, True)
         
-        # Información fija del importador (formato exacto como fue especificado, pero en mayúsculas)
+        # Información fija del importador (sin No. PARTE ya que irá en código de barras)
         self.info_importador = [
             "**IMPORTADOR: **MOTORMAN DE BAJA CALIFORNIA SA DE CV",
             "MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,",
             "TIJUANA, B.C. 22114 RFC: MBC210723RP9",
             "**DESCRIPCION:**",
             "**CONTENIDO:**",
-            "**HECHO EN:**",
-            "**No. PARTE:**"  # Nueva línea agregada
+            "**HECHO EN:**"
         ]
         
         # Crear el estilo para los widgets
@@ -94,7 +98,7 @@ class GeneradorEtiquetasApp:
         self.hecho_en_var = tk.StringVar(value="CHINA")
         ttk.Entry(datos_frame, textvariable=self.hecho_en_var, width=40).grid(row=2, column=1, sticky="we", pady=5, padx=5)
         
-        # NUEVO CAMPO: Número de Parte
+        # Campo para número de parte
         ttk.Label(datos_frame, text="No. PARTE:").grid(row=3, column=0, sticky="w", pady=5)
         self.numero_parte_var = tk.StringVar(value="12345-ABC")
         ttk.Entry(datos_frame, textvariable=self.numero_parte_var, width=40).grid(row=3, column=1, sticky="we", pady=5, padx=5)
@@ -107,7 +111,7 @@ class GeneradorEtiquetasApp:
         preview_frame = ttk.LabelFrame(main_frame, text="Vista Previa", padding="10")
         preview_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
         
-        # Canvas para vista previa (ajustado ligeramente más alto para acomodar la nueva línea)
+        # Canvas para vista previa (ajustado para acomodar código de barras)
         self.preview_canvas = tk.Canvas(preview_frame, bg="white", width=228, height=85)  # 3x escala
         self.preview_canvas.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
@@ -153,12 +157,11 @@ class GeneradorEtiquetasApp:
         hecho_en = self.hecho_en_var.get().upper()  # Convertir a mayúsculas
         numero_parte = self.numero_parte_var.get().upper()  # Convertir a mayúsculas
         
-        # Posiciones para las líneas en la vista previa (ajustadas para incluir nueva línea)
-        y_positions = [10, 20, 30, 40, 50, 60, 70]
+        # Posiciones para las líneas en la vista previa (sin línea de No. PARTE)
+        y_positions = [10, 20, 30, 40, 50, 60]
         
         # Tamaño de fuente para la vista previa
         font_size = 7
-        font_size_parte = 7  # 30% más pequeño para el número de parte
         
         # Dibujar cada línea
         for i, y_pos in enumerate(y_positions):
@@ -212,15 +215,31 @@ class GeneradorEtiquetasApp:
                                              text=hecho_en, 
                                              font=("Arial", font_size), 
                                              anchor="w")
-            elif i == 6:  # Séptima línea: **No. PARTE:** + valor (más pequeño)
-                self.preview_canvas.create_text(10, y_pos, 
-                                             text="No. PARTE:", 
-                                             font=("Arial", font_size_parte, "bold"), 
-                                             anchor="w")
-                self.preview_canvas.create_text(90, y_pos, 
-                                             text=numero_parte, 
-                                             font=("Arial", font_size_parte), 
-                                             anchor="w")
+        
+        # Agregar código de barras simulado
+        if numero_parte:
+            # Posición y tamaño del código de barras
+            scale = 3  # Factor de escala para la vista previa
+            barcode_y = 62  # Posición Y
+            barcode_height = 22  # Altura total
+            barcode_width = 45  # Ancho
+            barcode_x = 226 - barcode_width - 20  # Alineado a la derecha
+            
+            # Simular las barras
+            bar_height = 14
+            bar_width = 1.5
+            for i in range(0, int(barcode_width), int(bar_width * 2)):
+                if i % 3 < 1.5:
+                    self.preview_canvas.create_line(barcode_x + i, barcode_y + 2,
+                                                  barcode_x + i, barcode_y + bar_height,
+                                                  fill="black", width=bar_width)
+            
+            # Texto del número de parte debajo
+            text_x = barcode_x + barcode_width / 2
+            self.preview_canvas.create_text(text_x, barcode_y + bar_height + 6,
+                                          text=numero_parte,
+                                          font=("Arial", 6),
+                                          anchor="center")
     
     def crear_excel_ejemplo(self):
         """Crea un archivo Excel de ejemplo con datos de muestra"""
@@ -555,7 +574,7 @@ class GeneradorEtiquetasApp:
     def generar_pdf_etiquetas(self, archivo_salida, datos):
         """
         Genera un archivo PDF con etiquetas de importación de 76x25mm
-        Formato exacto como fue especificado, todo en mayúsculas
+        Formato exacto como fue especificado, todo en mayúsculas, con código de barras
         
         Args:
             archivo_salida: Nombre del archivo PDF a generar
@@ -595,10 +614,9 @@ class GeneradorEtiquetasApp:
                 
                 # Ajuste de tamaño de fuente base
                 font_size = 6
-                font_size_parte = 6  # 30% más pequeño para el número de parte
                 
-                # Posiciones para cada línea (ajustadas para incluir la nueva línea)
-                y_positions = [22*mm, 19.5*mm, 17*mm, 14*mm, 11*mm, 8*mm, 5*mm]
+                # Posiciones para cada línea (sin línea de No. PARTE)
+                y_positions = [22*mm, 19.5*mm, 17*mm, 14.5*mm, 12*mm, 9.5*mm]
                 
                 # Lista de textos para cada línea
                 textos = [
@@ -607,20 +625,15 @@ class GeneradorEtiquetasApp:
                     self.info_importador[2],                # TIJUANA, B.C. ...
                     self.info_importador[3],                # **DESCRIPCION:**
                     self.info_importador[4],                # **CONTENIDO:**
-                    self.info_importador[5],                # **HECHO EN:**
-                    self.info_importador[6]                 # **No. PARTE:**
+                    self.info_importador[5]                 # **HECHO EN:**
                 ]
                 
                 # Valores para agregar después de los encabezados
-                valores = ["", "", "", descripcion, contenido, hecho_en, numero_parte]
+                valores = ["", "", "", descripcion, contenido, hecho_en]
                 
                 # Dibujar cada línea
                 for i, (texto, y_pos) in enumerate(zip(textos, y_positions)):
-                    # Determinar el tamaño de fuente para esta línea
-                    if i == 6:  # Línea del número de parte
-                        current_font_size = font_size_parte
-                    else:
-                        current_font_size = font_size
+                    current_font_size = font_size
                     
                     # Aplicar negrita solo si el texto lo necesita
                     if "**" in texto:
@@ -652,6 +665,42 @@ class GeneradorEtiquetasApp:
                         # Texto sin formato especial - todo normal
                         c.setFont(font_name, current_font_size)
                         c.drawString(5*mm, y_pos, texto)
+                
+                # Código de barras
+                if numero_parte:
+                    try:
+                        # Generar código de barras
+                        buffer = io.BytesIO()
+                        code = Code128(numero_parte, writer=ImageWriter())
+                        
+                        # Opciones para código de barras más compacto
+                        options = {
+                            'module_width': 0.15,      # Barras más delgadas
+                            'module_height': 3.5,      # Altura reducida de barras
+                            'font_size': 6,            # Texto más pequeño
+                            'text_distance': 2.5,      # Espacio entre barras y texto
+                            'quiet_zone': 1,           # Márgenes mínimos
+                            'write_text': True         # Mostrar texto
+                        }
+                        
+                        code.write(buffer, options=options)
+                        buffer.seek(0)
+                        
+                        # Cargar imagen
+                        barcode_image = Image.open(buffer)
+                        
+                        # Posición y tamaño - MÁS PEQUEÑO
+                        barcode_width = 35*mm      # Reducido
+                        barcode_height = 8*mm       # Reducido
+                        barcode_x = 76*mm - barcode_width - 5*mm  # Alineado a la derecha
+                        barcode_y = 2*mm            # Subido ligeramente
+                        
+                        # Dibujar imagen
+                        c.drawInlineImage(barcode_image, barcode_x, barcode_y, 
+                                        width=barcode_width, height=barcode_height)
+                    
+                    except Exception as e:
+                        print(f"Error con código de barras: {e}")
                 
                 # Pasar a la siguiente página
                 c.showPage()
@@ -692,7 +741,6 @@ class GeneradorEtiquetasApp:
         alineacion_izquierda = Alignment(wrap_text=True, vertical='center', horizontal='left')
         negrita = Font(bold=True, size=7)  # Tamaño de fuente para las partes en negrita
         normal = Font(bold=False, size=7)  # Tamaño de fuente para texto normal
-        normal_pequeno = Font(bold=False, size=5)  # Tamaño más pequeño para número de parte
         
         # Configurar el ancho de columnas para etiquetas de 76mm (aproximadamente 25 unidades Excel)
         for col in range(1, 4):
@@ -731,17 +779,19 @@ class GeneradorEtiquetasApp:
             linea4 = "DESCRIPCION: " + descripcion
             linea5 = "CONTENIDO: " + contenido
             linea6 = "HECHO EN: " + hecho_en
-            linea7 = "No. PARTE: " + numero_parte  # Nueva línea
             
-            # Contenido completo de la etiqueta
-            contenido_etiqueta = f"{linea1}\n{linea2}\n{linea3}\n{linea4}\n{linea5}\n{linea6}\n{linea7}"
+            # Contenido completo de la etiqueta (sin línea de No. PARTE)
+            if numero_parte:
+                contenido_etiqueta = f"{linea1}\n{linea2}\n{linea3}\n{linea4}\n{linea5}\n{linea6}\n[CÓDIGO DE BARRAS: {numero_parte}]"
+            else:
+                contenido_etiqueta = f"{linea1}\n{linea2}\n{linea3}\n{linea4}\n{linea5}\n{linea6}"
             
             celda.value = contenido_etiqueta
             celda.font = normal  # Usar fuente normal por defecto
             celda.alignment = alineacion_izquierda  # Alineación a la izquierda
             celda.border = borde
             
-            # Ajustar la altura de la fila (ligeramente más alta para acomodar la línea extra)
+            # Ajustar la altura de la fila
             ws.row_dimensions[fila_actual].height = 21
             
             # Avanzar a la siguiente posición
