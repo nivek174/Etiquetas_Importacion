@@ -155,7 +155,7 @@ def generar_pdf_etiquetas(datos):
         
         # IMPORTANTE: Verificar si el texto es muy largo y ajustarlo
         texto_hecho_en = hecho_en
-        ancho_disponible = 35*mm  # Ancho máximo antes del código de barras
+        ancho_disponible = 45*mm  # Más espacio disponible (era 35mm)
         ancho_texto_actual = c.stringWidth(texto_hecho_en, "Helvetica", font_size)
         
         # Si el texto es muy largo, reducir el tamaño de fuente
@@ -176,11 +176,11 @@ def generar_pdf_etiquetas(datos):
                 
                 # Opciones para código de barras más compacto
                 options = {
-                    'module_width': 0.2,       # Un poco más ancho (era 0.15)
-                    'module_height': 5,        # Más alto (era 3.5)
-                    'font_size': 7,            # Texto un poco más grande (era 6)
-                    'text_distance': 3,        # Mayor separación (era 2.5)
-                    'quiet_zone': 2,           # Más margen blanco (era 1)
+                    'module_width': 0.15,      # Más delgado (reducido de 0.2)
+                    'module_height': 4,        # Menos alto (reducido de 5)
+                    'font_size': 5,            # Texto más pequeño (reducido de 7)
+                    'text_distance': 2,        # Menos separación (reducido de 3)
+                    'quiet_zone': 1,           # Margen mínimo (reducido de 2)
                     'write_text': True         # Mostrar texto
                 }
                 
@@ -190,10 +190,10 @@ def generar_pdf_etiquetas(datos):
                 # Cargar imagen
                 barcode_image = Image.open(barcode_buffer)
                 
-                # Posición y tamaño - MOVIDO AL CENTRO-DERECHA Y MÁS PEQUEÑO
-                barcode_width = 30*mm      # Más pequeño para no interferir
-                barcode_height = 10*mm     # Altura fija
-                barcode_x = 43*mm          # Centrado en la mitad derecha
+                # Posición y tamaño - AÚN MÁS PEQUEÑO Y MÁS A LA DERECHA
+                barcode_width = 25*mm      # Más pequeño (era 30mm)
+                barcode_height = 8*mm      # Menos alto (era 10mm)
+                barcode_x = 48*mm          # Más a la derecha (era 43mm)
                 barcode_y = 0.5*mm         # Pegado al fondo
                 
                 # Dibujar imagen
