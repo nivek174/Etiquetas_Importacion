@@ -152,7 +152,20 @@ def generar_pdf_etiquetas(datos):
         c.drawString(5*mm, y_positions[5], "HECHO EN: ")
         ancho_hecho = c.stringWidth("HECHO EN: ", "Helvetica-Bold", font_size)
         c.setFont("Helvetica", font_size)
-        c.drawString(5*mm + ancho_hecho, y_positions[5], hecho_en)
+        
+        # IMPORTANTE: Verificar si el texto es muy largo y ajustarlo
+        texto_hecho_en = hecho_en
+        ancho_disponible = 35*mm  # Ancho máximo antes del código de barras
+        ancho_texto_actual = c.stringWidth(texto_hecho_en, "Helvetica", font_size)
+        
+        # Si el texto es muy largo, reducir el tamaño de fuente
+        font_size_hecho = font_size
+        while ancho_texto_actual > ancho_disponible and font_size_hecho > 4:
+            font_size_hecho -= 0.5
+            c.setFont("Helvetica", font_size_hecho)
+            ancho_texto_actual = c.stringWidth(texto_hecho_en, "Helvetica", font_size_hecho)
+        
+        c.drawString(5*mm + ancho_hecho, y_positions[5], texto_hecho_en)
         
         # Código de barras
         if numero_parte:
@@ -177,11 +190,11 @@ def generar_pdf_etiquetas(datos):
                 # Cargar imagen
                 barcode_image = Image.open(barcode_buffer)
                 
-                # Posición y tamaño
-                barcode_width = 40*mm      # Un poco más ancho (era 35mm)
-                barcode_height = 10*mm      # Más alto (era 8mm)
-                barcode_x = 76*mm - barcode_width - 3*mm  # Ajustado por el nuevo ancho
-                barcode_y = 0.5*mm         # Bajado al fondo (era 1.5mm)
+                # Posición y tamaño - MOVIDO AL CENTRO-DERECHA Y MÁS PEQUEÑO
+                barcode_width = 30*mm      # Más pequeño para no interferir
+                barcode_height = 10*mm     # Altura fija
+                barcode_x = 43*mm          # Centrado en la mitad derecha
+                barcode_y = 0.5*mm         # Pegado al fondo
                 
                 # Dibujar imagen
                 c.drawInlineImage(barcode_image, barcode_x, barcode_y, 
