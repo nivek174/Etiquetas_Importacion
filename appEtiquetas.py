@@ -176,11 +176,11 @@ def generar_pdf_etiquetas(datos):
                 
                 # Opciones para código de barras más compacto
                 options = {
-                    'module_width': 0.15,      # Más delgado (reducido de 0.2)
+                    'module_width': 0.3,      # Más delgado (reducido de 0.2)
                     'module_height': 4,        # Menos alto (reducido de 5)
                     'font_size': 5,            # Texto más pequeño (reducido de 7)
                     'text_distance': 2,        # Menos separación (reducido de 3)
-                    'quiet_zone': 1,           # Margen mínimo (reducido de 2)
+                    'quiet_zone': 2,           # Margen mínimo (reducido de 2)
                     'write_text': True         # Mostrar texto
                 }
                 
