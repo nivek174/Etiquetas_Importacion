@@ -191,7 +191,7 @@ def generar_pdf_etiquetas(datos):
                 barcode_image = Image.open(barcode_buffer)
                 
                 # Posición y tamaño - AÚN MÁS PEQUEÑO Y MÁS A LA DERECHA
-                barcode_width = 27*mm      # Más pequeño (era 30mm)
+                barcode_width = 40*mm      # Más pequeño (era 30mm)
                 barcode_height = 9*mm      # Menos alto (era 10mm)
                 barcode_x = 40*mm          # Más a la derecha (era 43mm)
                 barcode_y = 0.5*mm         # Pegado al fondo
