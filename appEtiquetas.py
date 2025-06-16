@@ -163,11 +163,11 @@ def generar_pdf_etiquetas(datos):
                 
                 # Opciones para código de barras más compacto
                 options = {
-                    'module_width': 0.15,      # Barras más delgadas
-                    'module_height': 3.5,      # Altura reducida de barras
-                    'font_size': 6,            # Texto más pequeño
-                    'text_distance': 2.5,      # Espacio entre barras y texto
-                    'quiet_zone': 1,           # Márgenes mínimos
+                    'module_width': 0.2,       # Un poco más ancho (era 0.15)
+                    'module_height': 5,        # Más alto (era 3.5)
+                    'font_size': 7,            # Texto un poco más grande (era 6)
+                    'text_distance': 3,        # Mayor separación (era 2.5)
+                    'quiet_zone': 2,           # Más margen blanco (era 1)
                     'write_text': True         # Mostrar texto
                 }
                 
@@ -178,10 +178,10 @@ def generar_pdf_etiquetas(datos):
                 barcode_image = Image.open(barcode_buffer)
                 
                 # Posición y tamaño
-                barcode_width = 35*mm
-                barcode_height = 8*mm
-                barcode_x = 76*mm - barcode_width - 5*mm  # Alineado a la derecha
-                barcode_y = 2*mm                           # Subido ligeramente
+                barcode_width = 40*mm      # Un poco más ancho (era 35mm)
+                barcode_height = 10*mm      # Más alto (era 8mm)
+                barcode_x = 76*mm - barcode_width - 3*mm  # Ajustado por el nuevo ancho
+                barcode_y = 0.5*mm         # Bajado al fondo (era 1.5mm)
                 
                 # Dibujar imagen
                 c.drawInlineImage(barcode_image, barcode_x, barcode_y, 
