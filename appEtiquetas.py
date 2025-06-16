@@ -8,6 +8,10 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 import io
 import base64
+# Librerías para código de barras
+from barcode import Code128
+from barcode.writer import ImageWriter
+from PIL import Image
 
 st.set_page_config(page_title="Generador de Etiquetas", layout="wide")
 
@@ -31,15 +35,14 @@ st.markdown("""
 st.title("🏷️ Generador de Etiquetas de Importación 76x25mm")
 st.markdown("---")
 
-# Información fija del importador
+# Información fija del importador (sin No. PARTE ya que irá en código de barras)
 info_importador = [
     "**IMPORTADOR: **MOTORMAN DE BAJA CALIFORNIA SA DE CV",
     "MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,",
     "TIJUANA, B.C. 22114 RFC: MBC210723RP9",
     "**DESCRIPCION:**",
     "**CONTENIDO:**",
-    "**HECHO EN:**",
-    "**No. PARTE:**"
+    "**HECHO EN:**"
 ]
 
 # Crear columnas para el layout
@@ -60,7 +63,7 @@ with col1:
         st.text("PIEZA(S)")
     
     hecho_en = st.text_input("HECHO EN:", value="CHINA")
-    numero_parte = st.text_input("No. PARTE:", value="12345-ABC")  # NUEVO CAMPO
+    numero_parte = st.text_input("No. PARTE (SKU):", value="12345-ABC")
     cantidad_etiquetas = st.number_input("CANTIDAD DE ETIQUETAS:", min_value=1, max_value=100, value=10, step=1)
 
 with col2:
@@ -73,14 +76,17 @@ with col2:
         contenido_text = f"{cantidad_contenido} PIEZAS"
     
     preview_html = f"""
-    <div style="border: 2px solid black; padding: 10px; width: 228px; height: 85px; background-color: white; font-family: Arial; font-size: 7px; line-height: 1.2;">
+    <div style="border: 2px solid black; padding: 10px; width: 228px; height: 85px; background-color: white; font-family: Arial; font-size: 7px; line-height: 1.2; position: relative;">
         <div><strong>IMPORTADOR:</strong> MOTORMAN DE BAJA CALIFORNIA SA DE CV</div>
         <div>MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,</div>
         <div>TIJUANA, B.C. 22114 RFC: MBC210723RP9</div>
         <div><strong>DESCRIPCION:</strong> {descripcion.upper()}</div>
         <div><strong>CONTENIDO:</strong> {contenido_text}</div>
         <div><strong>HECHO EN:</strong> {hecho_en.upper()}</div>
-        <div><strong>No. PARTE:</strong> {numero_parte.upper()}</div>
+        <div style="position: absolute; bottom: 5px; right: 5px; border: 1px solid black; padding: 2px; font-size: 6px;">
+            <div style="background: repeating-linear-gradient(90deg, black, black 1px, white 1px, white 2px); height: 15px; width: 60px;"></div>
+            <div style="text-align: center; font-size: 5px; margin-top: 2px;">{numero_parte.upper()}</div>
+        </div>
     </div>
     """
     st.markdown(preview_html, unsafe_allow_html=True)
@@ -89,7 +95,7 @@ st.markdown("---")
 
 # Funciones para generar archivos
 def generar_pdf_etiquetas(datos):
-    """Genera un PDF con las etiquetas"""
+    """Genera un PDF con las etiquetas y código de barras"""
     buffer = io.BytesIO()
     
     # Crear canvas
@@ -111,15 +117,13 @@ def generar_pdf_etiquetas(datos):
         
         # Configurar fuente
         font_size = 6
-        font_size_parte = 6  # 30% más pequeño para el número de parte
         
-        # Posiciones para cada línea (ajustadas para incluir la nueva línea)
-        y_positions = [22*mm, 19.5*mm, 17*mm, 14*mm, 11*mm, 8*mm, 5*mm]
+        # Posiciones para cada línea
+        y_positions = [22*mm, 19.5*mm, 17*mm, 14.5*mm, 12*mm, 9.5*mm]
         
         # Primera línea: IMPORTADOR en negrita, resto normal
         c.setFont("Helvetica-Bold", font_size)
         c.drawString(5*mm, y_positions[0], "IMPORTADOR: ")
-        # Calcular ancho de "IMPORTADOR: " para posicionar el resto
         ancho_importador = c.stringWidth("IMPORTADOR: ", "Helvetica-Bold", font_size)
         c.setFont("Helvetica", font_size)
         c.drawString(5*mm + ancho_importador, y_positions[0], "MOTORMAN DE BAJA CALIFORNIA SA DE CV")
@@ -150,12 +154,44 @@ def generar_pdf_etiquetas(datos):
         c.setFont("Helvetica", font_size)
         c.drawString(5*mm + ancho_hecho, y_positions[5], hecho_en)
         
-        # Séptima línea: No. PARTE en negrita (más pequeño)
-        c.setFont("Helvetica-Bold", font_size_parte)
-        c.drawString(5*mm, y_positions[6], "No. PARTE: ")
-        ancho_parte = c.stringWidth("No. PARTE: ", "Helvetica-Bold", font_size_parte)
-        c.setFont("Helvetica", font_size_parte)
-        c.drawString(5*mm + ancho_parte, y_positions[6], numero_parte)
+        # Código de barras
+        if numero_parte:
+            try:
+                # Generar código de barras
+                barcode_buffer = io.BytesIO()
+                code = Code128(numero_parte, writer=ImageWriter())
+                
+                # Opciones para código de barras más compacto
+                options = {
+                    'module_width': 0.15,      # Barras más delgadas
+                    'module_height': 3.5,      # Altura reducida de barras
+                    'font_size': 6,            # Texto más pequeño
+                    'text_distance': 2.5,      # Espacio entre barras y texto
+                    'quiet_zone': 1,           # Márgenes mínimos
+                    'write_text': True         # Mostrar texto
+                }
+                
+                code.write(barcode_buffer, options=options)
+                barcode_buffer.seek(0)
+                
+                # Cargar imagen
+                barcode_image = Image.open(barcode_buffer)
+                
+                # Posición y tamaño
+                barcode_width = 35*mm
+                barcode_height = 8*mm
+                barcode_x = 76*mm - barcode_width - 5*mm  # Alineado a la derecha
+                barcode_y = 2*mm                           # Subido ligeramente
+                
+                # Dibujar imagen
+                c.drawInlineImage(barcode_image, barcode_x, barcode_y, 
+                                width=barcode_width, height=barcode_height)
+            
+            except Exception as e:
+                print(f"Error con código de barras: {e}")
+                # Si falla el código de barras, al menos mostrar el texto
+                c.setFont("Helvetica", 5)
+                c.drawString(barcode_x, barcode_y, f"[{numero_parte}]")
         
         c.showPage()
     
@@ -178,7 +214,7 @@ def generar_excel_etiquetas(datos):
     )
     
     alineacion = Alignment(wrap_text=True, vertical='center', horizontal='left')
-    normal = Font(bold=False, size=8)  # Aumentado 1 punto
+    normal = Font(bold=False, size=8)
     
     # Configurar columnas
     for col in range(1, 4):
@@ -203,13 +239,21 @@ def generar_excel_etiquetas(datos):
         numero_parte = etiqueta.get('numero_parte', '').upper()
         
         # Contenido de la etiqueta
-        contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
+        if numero_parte:
+            contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
 MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,
 TIJUANA, B.C. 22114 RFC: MBC210723RP9
 DESCRIPCION: {descripcion}
 CONTENIDO: {contenido}
 HECHO EN: {hecho_en}
-No. PARTE: {numero_parte}"""
+[CÓDIGO DE BARRAS: {numero_parte}]"""
+        else:
+            contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
+MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,
+TIJUANA, B.C. 22114 RFC: MBC210723RP9
+DESCRIPCION: {descripcion}
+CONTENIDO: {contenido}
+HECHO EN: {hecho_en}"""
         
         celda.value = contenido_etiqueta
         celda.font = normal
@@ -284,7 +328,7 @@ with col_btn2:
 with col_btn3:
     # Plantilla de ejemplo
     if st.button("📋 Descargar Plantilla"):
-        # Crear datos de ejemplo (ACTUALIZADO con numero_parte)
+        # Crear datos de ejemplo con numero_parte
         datos_ejemplo = pd.DataFrame([
             {"descripcion": "ABANICO PARA RADIADOR CON MOTOR", "cantidad_contenido": 1, "hecho_en": "CHINA", "numero_parte": "FAN-12345", "cantidad_etiquetas": 10},
             {"descripcion": "BOMBA DE AGUA", "cantidad_contenido": 2, "hecho_en": "JAPÓN", "numero_parte": "WP-67890", "cantidad_etiquetas": 5},
