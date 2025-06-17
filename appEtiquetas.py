@@ -388,28 +388,36 @@ if uploaded_file is not None:
             
             with col_imp1:
                 if st.button("📄 Generar PDF de Seleccionados"):
-                    # Preparar datos
+                    # CORRECCIÓN IMPORTANTE: No agrupar por descripción
                     etiquetas_datos = []
+                    
+                    # Procesar cada índice seleccionado INDIVIDUALMENTE
                     for idx in selected_indices:
                         row = df.loc[idx]
-                        cantidad_etiquetas = int(row.get('cantidad_etiquetas', 1))
-                        cantidad_contenido = int(row.get('cantidad_contenido', 1))
                         
-                        # Obtener número de parte
+                        # Obtener datos ESPECÍFICOS de ESTA fila
+                        descripcion = str(row.get('descripcion', ''))
+                        cantidad_contenido = int(row.get('cantidad_contenido', 1))
+                        hecho_en = str(row.get('hecho_en', ''))
+                        cantidad_etiquetas = int(row.get('cantidad_etiquetas', 1))
+                        
+                        # IMPORTANTE: Obtener el número de parte de ESTA fila específica
                         numero_parte = ""
-                        if "numero_parte" in row:
+                        if "numero_parte" in row and pd.notna(row["numero_parte"]):
                             numero_parte = str(row["numero_parte"])
-                        elif "sku" in row:
+                        elif "sku" in row and pd.notna(row["sku"]):
                             numero_parte = str(row["sku"])
-                        elif "part_number" in row:
+                        elif "part_number" in row and pd.notna(row["part_number"]):
                             numero_parte = str(row["part_number"])
                         
+                        # Generar las etiquetas para ESTA fila específica
+                        # NO agrupar con otras filas
                         for _ in range(cantidad_etiquetas):
                             etiquetas_datos.append({
-                                'descripcion': row['descripcion'],
+                                'descripcion': descripcion,
                                 'cantidad_contenido': cantidad_contenido,
-                                'hecho_en': row['hecho_en'],
-                                'numero_parte': numero_parte
+                                'hecho_en': hecho_en,
+                                'numero_parte': numero_parte  # Número de parte ESPECÍFICO de esta fila
                             })
                     
                     # Generar PDF
@@ -424,28 +432,36 @@ if uploaded_file is not None:
             
             with col_imp2:
                 if st.button("📊 Generar Excel de Seleccionados"):
-                    # Preparar datos
+                    # CORRECCIÓN IMPORTANTE: No agrupar por descripción
                     etiquetas_datos = []
+                    
+                    # Procesar cada índice seleccionado INDIVIDUALMENTE
                     for idx in selected_indices:
                         row = df.loc[idx]
-                        cantidad_etiquetas = int(row.get('cantidad_etiquetas', 1))
-                        cantidad_contenido = int(row.get('cantidad_contenido', 1))
                         
-                        # Obtener número de parte
+                        # Obtener datos ESPECÍFICOS de ESTA fila
+                        descripcion = str(row.get('descripcion', ''))
+                        cantidad_contenido = int(row.get('cantidad_contenido', 1))
+                        hecho_en = str(row.get('hecho_en', ''))
+                        cantidad_etiquetas = int(row.get('cantidad_etiquetas', 1))
+                        
+                        # IMPORTANTE: Obtener el número de parte de ESTA fila específica
                         numero_parte = ""
-                        if "numero_parte" in row:
+                        if "numero_parte" in row and pd.notna(row["numero_parte"]):
                             numero_parte = str(row["numero_parte"])
-                        elif "sku" in row:
+                        elif "sku" in row and pd.notna(row["sku"]):
                             numero_parte = str(row["sku"])
-                        elif "part_number" in row:
+                        elif "part_number" in row and pd.notna(row["part_number"]):
                             numero_parte = str(row["part_number"])
                         
+                        # Generar las etiquetas para ESTA fila específica
+                        # NO agrupar con otras filas
                         for _ in range(cantidad_etiquetas):
                             etiquetas_datos.append({
-                                'descripcion': row['descripcion'],
+                                'descripcion': descripcion,
                                 'cantidad_contenido': cantidad_contenido,
-                                'hecho_en': row['hecho_en'],
-                                'numero_parte': numero_parte
+                                'hecho_en': hecho_en,
+                                'numero_parte': numero_parte  # Número de parte ESPECÍFICO de esta fila
                             })
                     
                     # Generar Excel
