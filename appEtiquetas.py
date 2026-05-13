@@ -8,10 +8,6 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 import io
 import base64
-# Librerías para código de barras
-from barcode import Code128
-from barcode.writer import ImageWriter
-from PIL import Image
 
 st.set_page_config(page_title="Generador de Etiquetas", layout="wide")
 
@@ -76,17 +72,13 @@ with col2:
         contenido_text = f"{cantidad_contenido} PIEZAS"
     
     preview_html = f"""
-    <div style="border: 2px solid black; padding: 10px; width: 228px; height: 85px; background-color: white; font-family: Arial; font-size: 7px; line-height: 1.2; position: relative;">
+    <div style="border: 2px solid black; padding: 8px 10px; width: 228px; height: 90px; background-color: white; font-family: Arial; font-size: 9px; line-height: 1.45;">
         <div><strong>IMPORTADOR:</strong> MOTORMAN DE BAJA CALIFORNIA SA DE CV</div>
         <div>MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,</div>
         <div>TIJUANA, B.C. 22114 RFC: MBC210723RP9</div>
         <div><strong>DESCRIPCION:</strong> {descripcion.upper()}</div>
         <div><strong>CONTENIDO:</strong> {contenido_text}</div>
         <div><strong>HECHO EN:</strong> {hecho_en.upper()}</div>
-        <div style="position: absolute; bottom: 5px; right: 5px; border: 1px solid black; padding: 2px; font-size: 6px;">
-            <div style="background: repeating-linear-gradient(90deg, black, black 1px, white 1px, white 2px); height: 15px; width: 60px;"></div>
-            <div style="text-align: center; font-size: 5px; margin-top: 2px;">{numero_parte.upper()}</div>
-        </div>
     </div>
     """
     st.markdown(preview_html, unsafe_allow_html=True)
@@ -95,119 +87,48 @@ st.markdown("---")
 
 # Funciones para generar archivos
 def generar_pdf_etiquetas(datos):
-    """Genera un PDF con las etiquetas y código de barras"""
+    """Genera un PDF con las etiquetas (sin codigo de barras, font 8pt)."""
     buffer = io.BytesIO()
-    
-    # Crear canvas
     c = canvas.Canvas(buffer, pagesize=(76*mm, 25*mm))
-    
-    # Para cada etiqueta
+
+    FONT_SIZE = 8
+    FONT_MIN = 5
+    X_LEFT = 3*mm
+    ANCHO_MAX = 70*mm
+    Y_POSITIONS = [20.5*mm, 17*mm, 13.5*mm, 10*mm, 6.5*mm, 3*mm]
+
+    def dibujar_label_valor(y, label, valor):
+        fs = FONT_SIZE
+        while fs > FONT_MIN:
+            ancho_total = (c.stringWidth(label, "Helvetica-Bold", fs)
+                           + c.stringWidth(valor, "Helvetica", fs))
+            if ancho_total <= ANCHO_MAX:
+                break
+            fs -= 0.5
+        c.setFont("Helvetica-Bold", fs)
+        c.drawString(X_LEFT, y, label)
+        ancho_label = c.stringWidth(label, "Helvetica-Bold", fs)
+        c.setFont("Helvetica", fs)
+        c.drawString(X_LEFT + ancho_label, y, valor)
+
     for etiqueta in datos:
-        # Determinar texto de contenido
         cantidad_contenido = etiqueta.get('cantidad_contenido', 1)
-        if cantidad_contenido == 1:
-            contenido = f"{cantidad_contenido} PIEZA"
-        else:
-            contenido = f"{cantidad_contenido} PIEZAS"
-        
-        # Convertir valores a mayúsculas
+        contenido = f"{cantidad_contenido} PIEZA" if cantidad_contenido == 1 else f"{cantidad_contenido} PIEZAS"
         descripcion = etiqueta['descripcion'].upper()
         hecho_en = etiqueta['hecho_en'].upper()
-        numero_parte = etiqueta.get('numero_parte', '').upper()
-        
-        # Configurar fuente
-        font_size = 6
-        
-        # Posiciones para cada línea
-        y_positions = [22*mm, 19.5*mm, 17*mm, 14.5*mm, 12*mm, 9.5*mm]
-        
-        # Primera línea: IMPORTADOR en negrita, resto normal
-        c.setFont("Helvetica-Bold", font_size)
-        c.drawString(5*mm, y_positions[0], "IMPORTADOR: ")
-        ancho_importador = c.stringWidth("IMPORTADOR: ", "Helvetica-Bold", font_size)
-        c.setFont("Helvetica", font_size)
-        c.drawString(5*mm + ancho_importador, y_positions[0], "MOTORMAN DE BAJA CALIFORNIA SA DE CV")
-        
-        # Segunda y tercera línea (normal)
-        c.setFont("Helvetica", font_size)
-        c.drawString(5*mm, y_positions[1], "MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,")
-        c.drawString(5*mm, y_positions[2], "TIJUANA, B.C. 22114 RFC: MBC210723RP9")
-        
-        # Cuarta línea: DESCRIPCION en negrita
-        c.setFont("Helvetica-Bold", font_size)
-        c.drawString(5*mm, y_positions[3], "DESCRIPCION: ")
-        ancho_descripcion = c.stringWidth("DESCRIPCION: ", "Helvetica-Bold", font_size)
-        c.setFont("Helvetica", font_size)
-        c.drawString(5*mm + ancho_descripcion, y_positions[3], descripcion)
-        
-        # Quinta línea: CONTENIDO en negrita
-        c.setFont("Helvetica-Bold", font_size)
-        c.drawString(5*mm, y_positions[4], "CONTENIDO: ")
-        ancho_contenido = c.stringWidth("CONTENIDO: ", "Helvetica-Bold", font_size)
-        c.setFont("Helvetica", font_size)
-        c.drawString(5*mm + ancho_contenido, y_positions[4], contenido)
-        
-        # Sexta línea: HECHO EN en negrita
-        c.setFont("Helvetica-Bold", font_size)
-        c.drawString(5*mm, y_positions[5], "HECHO EN: ")
-        ancho_hecho = c.stringWidth("HECHO EN: ", "Helvetica-Bold", font_size)
-        c.setFont("Helvetica", font_size)
-        
-        # IMPORTANTE: Verificar si el texto es muy largo y ajustarlo
-        texto_hecho_en = hecho_en
-        ancho_disponible = 45*mm  # Más espacio disponible (era 35mm)
-        ancho_texto_actual = c.stringWidth(texto_hecho_en, "Helvetica", font_size)
-        
-        # Si el texto es muy largo, reducir el tamaño de fuente
-        font_size_hecho = font_size
-        while ancho_texto_actual > ancho_disponible and font_size_hecho > 4:
-            font_size_hecho -= 0.5
-            c.setFont("Helvetica", font_size_hecho)
-            ancho_texto_actual = c.stringWidth(texto_hecho_en, "Helvetica", font_size_hecho)
-        
-        c.drawString(5*mm + ancho_hecho, y_positions[5], texto_hecho_en)
-        
-        # Código de barras
-        if numero_parte:
-            try:
-                # Generar código de barras
-                barcode_buffer = io.BytesIO()
-                code = Code128(numero_parte, writer=ImageWriter())
-                
-                # Opciones para código de barras más compacto
-                options = {
-                    'module_width': 0.3,      # Más delgado (reducido de 0.2)
-                    'module_height': 4,        # Menos alto (reducido de 5)
-                    'font_size': 5,            # Texto más pequeño (reducido de 7)
-                    'text_distance': 2,        # Menos separación (reducido de 3)
-                    'quiet_zone': 2,           # Margen mínimo (reducido de 2)
-                    'write_text': True         # Mostrar texto
-                }
-                
-                code.write(barcode_buffer, options=options)
-                barcode_buffer.seek(0)
-                
-                # Cargar imagen
-                barcode_image = Image.open(barcode_buffer)
-                
-                # Posición y tamaño - AÚN MÁS PEQUEÑO Y MÁS A LA DERECHA
-                barcode_width = 40*mm      # Más pequeño (era 30mm)
-                barcode_height = 9*mm      # Menos alto (era 10mm)
-                barcode_x = (76*mm - barcode_width) / 2  # CENTRADO HORIZONTALMENTE
-                barcode_y = 0.5*mm         # Pegado al fondo
-                
-                # Dibujar imagen
-                c.drawInlineImage(barcode_image, barcode_x, barcode_y, 
-                                width=barcode_width, height=barcode_height)
-            
-            except Exception as e:
-                print(f"Error con código de barras: {e}")
-                # Si falla el código de barras, al menos mostrar el texto
-                c.setFont("Helvetica", 5)
-                c.drawString(barcode_x, barcode_y, f"[{numero_parte}]")
-        
+
+        dibujar_label_valor(Y_POSITIONS[0], "IMPORTADOR: ", "MOTORMAN DE BAJA CALIFORNIA SA DE CV")
+
+        c.setFont("Helvetica", FONT_SIZE)
+        c.drawString(X_LEFT, Y_POSITIONS[1], "MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,")
+        c.drawString(X_LEFT, Y_POSITIONS[2], "TIJUANA, B.C. 22114 RFC: MBC210723RP9")
+
+        dibujar_label_valor(Y_POSITIONS[3], "DESCRIPCION: ", descripcion)
+        dibujar_label_valor(Y_POSITIONS[4], "CONTENIDO: ", contenido)
+        dibujar_label_valor(Y_POSITIONS[5], "HECHO EN: ", hecho_en)
+
         c.showPage()
-    
+
     c.save()
     buffer.seek(0)
     return buffer
@@ -249,19 +170,8 @@ def generar_excel_etiquetas(datos):
         
         descripcion = etiqueta['descripcion'].upper()
         hecho_en = etiqueta['hecho_en'].upper()
-        numero_parte = etiqueta.get('numero_parte', '').upper()
-        
-        # Contenido de la etiqueta
-        if numero_parte:
-            contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
-MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,
-TIJUANA, B.C. 22114 RFC: MBC210723RP9
-DESCRIPCION: {descripcion}
-CONTENIDO: {contenido}
-HECHO EN: {hecho_en}
-[CÓDIGO DE BARRAS: {numero_parte}]"""
-        else:
-            contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
+
+        contenido_etiqueta = f"""IMPORTADOR: MOTORMAN DE BAJA CALIFORNIA SA DE CV
 MARISCAL SUCRE 6738 LA CIENEGA PONIENTE,
 TIJUANA, B.C. 22114 RFC: MBC210723RP9
 DESCRIPCION: {descripcion}
